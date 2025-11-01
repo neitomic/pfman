@@ -61,8 +61,9 @@ impl FormState {
         });
 
         let filtered_kube_contexts = kube_contexts.clone();
-        let namespaces = get_namespaces(Some(&kube_context));
-        let filtered_namespaces = namespaces.clone();
+        // Don't load namespaces immediately - will be lazy loaded when namespace field is focused
+        let namespaces = Vec::new();
+        let filtered_namespaces = Vec::new();
 
         Self {
             step: FormStep::SelectType,
