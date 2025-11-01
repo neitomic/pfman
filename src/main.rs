@@ -40,7 +40,11 @@ impl App {
             self.handle_crossterm_events()?;
 
             // Poll for status updates from background monitor
-            if self.state.process_manager.poll_status_updates(&mut self.state.sessions) {
+            if self
+                .state
+                .process_manager
+                .poll_status_updates(&mut self.state.sessions)
+            {
                 // Save updated statuses if any changed
                 let _ = self.state.save();
             }
@@ -105,12 +109,16 @@ impl App {
                 }
                 KeyCode::Enter => self.state.search_mode = false,
                 KeyCode::Char(c) => {
-                    self.state.search_query.insert(self.state.search_cursor_pos, c);
+                    self.state
+                        .search_query
+                        .insert(self.state.search_cursor_pos, c);
                     self.state.search_cursor_pos += 1;
                 }
                 KeyCode::Backspace => {
                     if self.state.search_cursor_pos > 0 {
-                        self.state.search_query.remove(self.state.search_cursor_pos - 1);
+                        self.state
+                            .search_query
+                            .remove(self.state.search_cursor_pos - 1);
                         self.state.search_cursor_pos -= 1;
                     }
                 }
@@ -120,9 +128,8 @@ impl App {
         }
 
         match (key.modifiers, key.code) {
-            (KeyModifiers::CONTROL, KeyCode::Char('c') | KeyCode::Char('C')) | (_, KeyCode::Char('q')) => {
-                self.quit()
-            }
+            (KeyModifiers::CONTROL, KeyCode::Char('c') | KeyCode::Char('C'))
+            | (_, KeyCode::Char('q')) => self.quit(),
             (_, KeyCode::Up) => self.move_selection(-1),
             (_, KeyCode::Down) => self.move_selection(1),
             (_, KeyCode::Char('c')) => self.create_session(),
@@ -212,22 +219,37 @@ impl App {
                     self.save_form();
                 }
                 (_, KeyCode::Tab) => {
-                    let is_create_mode = matches!(self.state.current_screen, Screen::SessionForm(FormMode::Create));
+                    let is_create_mode = matches!(
+                        self.state.current_screen,
+                        Screen::SessionForm(FormMode::Create)
+                    );
                     let old_field = form_state.focused_field;
                     let field_count = form_state.field_count();
 
                     // Copy port value if leaving a port field and other port is empty (create mode only)
                     if is_create_mode {
                         if form_state.session_type == models::SessionType::Kubectl {
-                            if old_field == 4 && !form_state.local_port.is_empty() && form_state.remote_port.is_empty() {
+                            if old_field == 4
+                                && !form_state.local_port.is_empty()
+                                && form_state.remote_port.is_empty()
+                            {
                                 form_state.remote_port = form_state.local_port.clone();
-                            } else if old_field == 5 && !form_state.remote_port.is_empty() && form_state.local_port.is_empty() {
+                            } else if old_field == 5
+                                && !form_state.remote_port.is_empty()
+                                && form_state.local_port.is_empty()
+                            {
                                 form_state.local_port = form_state.remote_port.clone();
                             }
                         } else if field_count == 4 {
-                            if old_field == 2 && !form_state.local_port.is_empty() && form_state.remote_port.is_empty() {
+                            if old_field == 2
+                                && !form_state.local_port.is_empty()
+                                && form_state.remote_port.is_empty()
+                            {
                                 form_state.remote_port = form_state.local_port.clone();
-                            } else if old_field == 3 && !form_state.remote_port.is_empty() && form_state.local_port.is_empty() {
+                            } else if old_field == 3
+                                && !form_state.remote_port.is_empty()
+                                && form_state.local_port.is_empty()
+                            {
                                 form_state.local_port = form_state.remote_port.clone();
                             }
                         }
@@ -235,45 +257,61 @@ impl App {
 
                     form_state.focused_field = (form_state.focused_field + 1) % field_count;
                     form_state.hide_suggestions();
-                    form_state.cursor_pos = if form_state.session_type == models::SessionType::Kubectl {
-                        match form_state.focused_field {
-                            0 => form_state.context_field.len(),
-                            1 => form_state.name.len(),
-                            2 => form_state.namespace_field.len(),
-                            3 => form_state.target.len(),
-                            4 => form_state.local_port.len(),
-                            5 => form_state.remote_port.len(),
-                            _ => 0,
-                        }
-                    } else {
-                        match form_state.focused_field {
-                            0 => form_state.name.len(),
-                            1 => form_state.target.len(),
-                            2 => form_state.local_port.len(),
-                            3 => form_state.remote_port.len(),
-                            _ => 0,
-                        }
-                    };
+                    form_state.cursor_pos =
+                        if form_state.session_type == models::SessionType::Kubectl {
+                            match form_state.focused_field {
+                                0 => form_state.context_field.len(),
+                                1 => form_state.name.len(),
+                                2 => form_state.namespace_field.len(),
+                                3 => form_state.target.len(),
+                                4 => form_state.local_port.len(),
+                                5 => form_state.remote_port.len(),
+                                _ => 0,
+                            }
+                        } else {
+                            match form_state.focused_field {
+                                0 => form_state.name.len(),
+                                1 => form_state.target.len(),
+                                2 => form_state.local_port.len(),
+                                3 => form_state.remote_port.len(),
+                                _ => 0,
+                            }
+                        };
                     form_state.on_focus_change();
                     form_state.show_port_suggestions();
                 }
                 (_, KeyCode::BackTab) => {
-                    let is_create_mode = matches!(self.state.current_screen, Screen::SessionForm(FormMode::Create));
+                    let is_create_mode = matches!(
+                        self.state.current_screen,
+                        Screen::SessionForm(FormMode::Create)
+                    );
                     let old_field = form_state.focused_field;
                     let field_count = form_state.field_count();
 
                     // Copy port value if leaving a port field and other port is empty (create mode only)
                     if is_create_mode {
                         if form_state.session_type == models::SessionType::Kubectl {
-                            if old_field == 4 && !form_state.local_port.is_empty() && form_state.remote_port.is_empty() {
+                            if old_field == 4
+                                && !form_state.local_port.is_empty()
+                                && form_state.remote_port.is_empty()
+                            {
                                 form_state.remote_port = form_state.local_port.clone();
-                            } else if old_field == 5 && !form_state.remote_port.is_empty() && form_state.local_port.is_empty() {
+                            } else if old_field == 5
+                                && !form_state.remote_port.is_empty()
+                                && form_state.local_port.is_empty()
+                            {
                                 form_state.local_port = form_state.remote_port.clone();
                             }
                         } else if field_count == 4 {
-                            if old_field == 2 && !form_state.local_port.is_empty() && form_state.remote_port.is_empty() {
+                            if old_field == 2
+                                && !form_state.local_port.is_empty()
+                                && form_state.remote_port.is_empty()
+                            {
                                 form_state.remote_port = form_state.local_port.clone();
-                            } else if old_field == 3 && !form_state.remote_port.is_empty() && form_state.local_port.is_empty() {
+                            } else if old_field == 3
+                                && !form_state.remote_port.is_empty()
+                                && form_state.local_port.is_empty()
+                            {
                                 form_state.local_port = form_state.remote_port.clone();
                             }
                         }
@@ -285,25 +323,26 @@ impl App {
                         form_state.focused_field - 1
                     };
                     form_state.hide_suggestions();
-                    form_state.cursor_pos = if form_state.session_type == models::SessionType::Kubectl {
-                        match form_state.focused_field {
-                            0 => form_state.context_field.len(),
-                            1 => form_state.name.len(),
-                            2 => form_state.namespace_field.len(),
-                            3 => form_state.target.len(),
-                            4 => form_state.local_port.len(),
-                            5 => form_state.remote_port.len(),
-                            _ => 0,
-                        }
-                    } else {
-                        match form_state.focused_field {
-                            0 => form_state.name.len(),
-                            1 => form_state.target.len(),
-                            2 => form_state.local_port.len(),
-                            3 => form_state.remote_port.len(),
-                            _ => 0,
-                        }
-                    };
+                    form_state.cursor_pos =
+                        if form_state.session_type == models::SessionType::Kubectl {
+                            match form_state.focused_field {
+                                0 => form_state.context_field.len(),
+                                1 => form_state.name.len(),
+                                2 => form_state.namespace_field.len(),
+                                3 => form_state.target.len(),
+                                4 => form_state.local_port.len(),
+                                5 => form_state.remote_port.len(),
+                                _ => 0,
+                            }
+                        } else {
+                            match form_state.focused_field {
+                                0 => form_state.name.len(),
+                                1 => form_state.target.len(),
+                                2 => form_state.local_port.len(),
+                                3 => form_state.remote_port.len(),
+                                _ => 0,
+                            }
+                        };
                     form_state.on_focus_change();
                     form_state.show_port_suggestions();
                 }
@@ -367,7 +406,7 @@ impl App {
                             _ => {}
                         }
                     }
-                },
+                }
                 (_, KeyCode::Backspace) => {
                     if form_state.session_type == models::SessionType::Kubectl {
                         match form_state.focused_field {
@@ -444,7 +483,7 @@ impl App {
                             _ => {}
                         }
                     }
-                },
+                }
                 _ => {}
             }
         }

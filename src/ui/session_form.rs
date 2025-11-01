@@ -1,13 +1,16 @@
-use crate::kube_config::{filter_targets, get_current_context, get_namespaces, get_targets, parse_kube_config, KubeContext, KubeTarget};
+use crate::kube_config::{
+    KubeContext, KubeTarget, filter_targets, get_current_context, get_namespaces, get_targets,
+    parse_kube_config,
+};
 use crate::models::{Session, SessionType};
-use crate::ssh_config::{filter_hosts, parse_ssh_config, SshHost};
+use crate::ssh_config::{SshHost, filter_hosts, parse_ssh_config};
 use crate::ui::FormMode;
 use ratatui::{
+    Frame,
     layout::{Constraint, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph},
-    Frame,
 };
 use std::sync::mpsc::{self, Receiver};
 use std::thread;
@@ -109,7 +112,11 @@ impl FormState {
         let filtered_namespaces = Vec::new();
 
         // For kubectl type, focus on name (field 1), for others focus on name (field 0)
-        let focused_field = if session.session_type == SessionType::Kubectl { 1 } else { 0 };
+        let focused_field = if session.session_type == SessionType::Kubectl {
+            1
+        } else {
+            0
+        };
 
         Self {
             step: FormStep::FillFields,
@@ -120,7 +127,10 @@ impl FormState {
             namespace_field,
             target: session.target.clone(),
             local_port: session.local_port.to_string(),
-            remote_port: session.remote_port.map(|p| p.to_string()).unwrap_or_default(),
+            remote_port: session
+                .remote_port
+                .map(|p| p.to_string())
+                .unwrap_or_default(),
             focused_field,
             cursor_pos: name_len,
             ssh_hosts,
@@ -157,8 +167,16 @@ impl FormState {
         );
 
         if self.session_type == SessionType::Kubectl {
-            session.kube_context = if self.context_field.is_empty() { None } else { Some(self.context_field.clone()) };
-            session.kube_namespace = if self.namespace_field.is_empty() { None } else { Some(self.namespace_field.clone()) };
+            session.kube_context = if self.context_field.is_empty() {
+                None
+            } else {
+                Some(self.context_field.clone())
+            };
+            session.kube_namespace = if self.namespace_field.is_empty() {
+                None
+            } else {
+                Some(self.namespace_field.clone())
+            };
         }
 
         Some(session)
@@ -189,15 +207,19 @@ impl FormState {
 
     pub fn field_count(&self) -> usize {
         match self.session_type {
-            SessionType::Socks5 => 3, // Name, Target, Local Port
+            SessionType::Socks5 => 3,  // Name, Target, Local Port
             SessionType::Kubectl => 6, // Name, Context, Namespace, Target, Local Port, Remote Port
-            SessionType::SSH => 4, // Name, Target, Local Port, Remote Port
+            SessionType::SSH => 4,     // Name, Target, Local Port, Remote Port
         }
     }
 
     pub fn update_target(&mut self, target: String) {
         self.target = target;
-        let target_field_idx = if self.session_type == SessionType::Kubectl { 3 } else { 1 };
+        let target_field_idx = if self.session_type == SessionType::Kubectl {
+            3
+        } else {
+            1
+        };
 
         if self.focused_field == target_field_idx {
             if self.session_type == SessionType::SSH || self.session_type == SessionType::Socks5 {
@@ -207,7 +229,8 @@ impl FormState {
                 self.scroll_offset = 0;
             } else if self.session_type == SessionType::Kubectl {
                 // Load targets asynchronously if not already loaded
-                if self.kube_targets.is_empty() && !self.target.is_empty() && !self.loading_targets {
+                if self.kube_targets.is_empty() && !self.target.is_empty() && !self.loading_targets
+                {
                     self.start_loading_targets();
                 } else {
                     // Filter existing targets
@@ -236,12 +259,16 @@ impl FormState {
             self.filtered_kube_contexts = self.kube_contexts.clone();
         } else {
             let query_lower = self.context_field.to_lowercase();
-            self.filtered_kube_contexts = self.kube_contexts
+            self.filtered_kube_contexts = self
+                .kube_contexts
                 .iter()
                 .filter(|ctx| {
                     ctx.name.to_lowercase().contains(&query_lower)
                         || ctx.cluster.to_lowercase().contains(&query_lower)
-                        || ctx.namespace.as_ref().map_or(false, |ns| ns.to_lowercase().contains(&query_lower))
+                        || ctx
+                            .namespace
+                            .as_ref()
+                            .map_or(false, |ns| ns.to_lowercase().contains(&query_lower))
                 })
                 .cloned()
                 .collect();
@@ -268,7 +295,8 @@ impl FormState {
             self.filtered_namespaces = self.namespaces.clone();
         } else {
             let query_lower = self.namespace_field.to_lowercase();
-            self.filtered_namespaces = self.namespaces
+            self.filtered_namespaces = self
+                .namespaces
                 .iter()
                 .filter(|ns| ns.to_lowercase().contains(&query_lower))
                 .cloned()
@@ -278,7 +306,11 @@ impl FormState {
 
     pub fn reload_namespaces(&mut self) {
         if self.session_type == SessionType::Kubectl {
-            let context = if self.context_field.is_empty() { None } else { Some(self.context_field.as_str()) };
+            let context = if self.context_field.is_empty() {
+                None
+            } else {
+                Some(self.context_field.as_str())
+            };
             self.namespaces = get_namespaces(context);
             self.filtered_namespaces = self.namespaces.clone();
         }
@@ -314,7 +346,9 @@ impl FormState {
         }
 
         // Handle port field suggestions for kubectl
-        if self.session_type == SessionType::Kubectl && (self.focused_field == 4 || self.focused_field == 5) {
+        if self.session_type == SessionType::Kubectl
+            && (self.focused_field == 4 || self.focused_field == 5)
+        {
             if let Some(&port) = self.available_ports.get(self.selected_suggestion) {
                 let port_str = port.to_string();
                 if self.focused_field == 4 {
@@ -376,7 +410,9 @@ impl FormState {
                 return;
             }
             self.filtered_namespaces.len()
-        } else if self.session_type == SessionType::Kubectl && (self.focused_field == 4 || self.focused_field == 5) {
+        } else if self.session_type == SessionType::Kubectl
+            && (self.focused_field == 4 || self.focused_field == 5)
+        {
             // Port field suggestions
             if self.available_ports.is_empty() {
                 return;
@@ -425,7 +461,10 @@ impl FormState {
 
     pub fn on_focus_change(&mut self) {
         // Lazy load namespaces when namespace field gets focus
-        if self.session_type == SessionType::Kubectl && self.focused_field == 2 && self.namespaces.is_empty() {
+        if self.session_type == SessionType::Kubectl
+            && self.focused_field == 2
+            && self.namespaces.is_empty()
+        {
             self.reload_namespaces();
         }
     }
@@ -435,8 +474,16 @@ impl FormState {
             return;
         }
 
-        let context = if self.context_field.is_empty() { None } else { Some(self.context_field.clone()) };
-        let namespace = if self.namespace_field.is_empty() { None } else { Some(self.namespace_field.clone()) };
+        let context = if self.context_field.is_empty() {
+            None
+        } else {
+            Some(self.context_field.clone())
+        };
+        let namespace = if self.namespace_field.is_empty() {
+            None
+        } else {
+            Some(self.namespace_field.clone())
+        };
         let (tx, rx) = mpsc::channel();
 
         self.target_receiver = Some(rx);
@@ -453,7 +500,8 @@ impl FormState {
             if let Ok(targets) = rx.try_recv() {
                 self.kube_targets = targets;
                 self.filtered_kube_targets = filter_targets(&self.kube_targets, &self.target);
-                self.show_suggestions = !self.filtered_kube_targets.is_empty() && self.focused_field == 3;
+                self.show_suggestions =
+                    !self.filtered_kube_targets.is_empty() && self.focused_field == 3;
                 self.selected_suggestion = 0;
                 self.scroll_offset = 0;
                 self.loading_targets = false;
@@ -505,7 +553,11 @@ pub fn render(frame: &mut Frame, form_state: &FormState, mode: &FormMode, area: 
 
 fn render_title(frame: &mut Frame, title: &str, area: Rect) {
     let title_widget = Paragraph::new(title)
-        .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+        .style(
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        )
         .block(Block::default().borders(Borders::ALL));
     frame.render_widget(title_widget, area);
 }
@@ -603,7 +655,9 @@ fn render_form(frame: &mut Frame, form_state: &FormState, area: Rect) {
             Span::styled("Type: ", Style::default().add_modifier(Modifier::BOLD)),
             Span::styled(
                 type_str,
-                Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
             ),
         ]),
         Line::from(""),
@@ -613,10 +667,7 @@ fn render_form(frame: &mut Frame, form_state: &FormState, area: Rect) {
     if form_state.session_type == SessionType::Kubectl && form_state.loading_targets {
         lines.push(Line::from(vec![
             Span::styled("Status: ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::styled(
-                "Loading targets...",
-                Style::default().fg(Color::Yellow),
-            ),
+            Span::styled("Loading targets...", Style::default().fg(Color::Yellow)),
         ]));
         lines.push(Line::from(""));
     }
@@ -769,11 +820,7 @@ fn render_suggestions(frame: &mut Frame, form_state: &FormState, area: Rect) {
             (items, "SSH Hosts (↑↓ navigate, Enter select, Esc close)")
         };
 
-    let list = List::new(items).block(
-        Block::default()
-            .borders(Borders::ALL)
-            .title(title),
-    );
+    let list = List::new(items).block(Block::default().borders(Borders::ALL).title(title));
 
     frame.render_widget(list, area);
 }

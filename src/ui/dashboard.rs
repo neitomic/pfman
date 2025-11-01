@@ -1,11 +1,11 @@
 use crate::models::SessionStatus;
 use crate::ui::AppState;
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table},
-    Frame,
 };
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -29,7 +29,11 @@ pub fn render(frame: &mut Frame, state: &AppState, area: Rect) {
 
 fn render_title(frame: &mut Frame, area: Rect) {
     let title = Paragraph::new("Port-Forwarding Manager")
-        .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+        .style(
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        )
         .block(Block::default().borders(Borders::ALL));
     frame.render_widget(title, area);
 }
@@ -191,23 +195,19 @@ fn render_delete_confirmation(frame: &mut Frame, state: &AppState, area: Rect) {
             Line::from(""),
             Line::from(Span::styled(
                 "Delete Session?",
-                Style::default()
-                    .fg(Color::Red)
-                    .add_modifier(Modifier::BOLD),
+                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
             )),
             Line::from(""),
             Line::from(Span::raw(format!("Session: {}", session_name))),
             Line::from(""),
         ];
 
-        let paragraph = Paragraph::new(text)
-            .alignment(Alignment::Center)
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .border_style(Style::default().fg(Color::Red))
-                    .style(Style::default().bg(Color::Black)),
-            );
+        let paragraph = Paragraph::new(text).alignment(Alignment::Center).block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::Red))
+                .style(Style::default().bg(Color::Black)),
+        );
 
         frame.render_widget(Clear, popup_area);
         frame.render_widget(paragraph, popup_area);

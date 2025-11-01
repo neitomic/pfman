@@ -1,11 +1,11 @@
 use crate::models::Session;
 use crate::ui::AppState;
 use ratatui::{
+    Frame,
     layout::{Constraint, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph, Wrap},
-    Frame,
 };
 
 pub fn render(frame: &mut Frame, state: &AppState, session_idx: usize, area: Rect) {
@@ -62,13 +62,19 @@ fn render_header(frame: &mut Frame, session: &Session, area: Rect) {
     // Add error message line if status is Error
     if let crate::models::SessionStatus::Error(msg) = &session.status {
         header_text.push(Line::from(vec![
-            Span::styled("Error: ", Style::default().add_modifier(Modifier::BOLD).fg(Color::Red)),
+            Span::styled(
+                "Error: ",
+                Style::default().add_modifier(Modifier::BOLD).fg(Color::Red),
+            ),
             Span::styled(msg, Style::default().fg(Color::Red)),
         ]));
     }
 
-    let header = Paragraph::new(header_text)
-        .block(Block::default().borders(Borders::ALL).title("Session Details"));
+    let header = Paragraph::new(header_text).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .title("Session Details"),
+    );
     frame.render_widget(header, area);
 }
 

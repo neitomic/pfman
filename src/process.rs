@@ -324,7 +324,6 @@ impl ProcessManager {
         Ok(())
     }
 
-
     fn build_ssh_command(&self, session: &Session) -> Command {
         let mut cmd = Command::new("ssh");
         cmd.arg("-L")
@@ -356,13 +355,11 @@ impl ProcessManager {
             cmd.arg("--namespace").arg(ns);
         }
 
-        cmd.arg("port-forward")
-            .arg(&session.target)
-            .arg(format!(
-                "{}:{}",
-                session.local_port,
-                session.remote_port.unwrap_or(0)
-            ));
+        cmd.arg("port-forward").arg(&session.target).arg(format!(
+            "{}:{}",
+            session.local_port,
+            session.remote_port.unwrap_or(0)
+        ));
 
         for opt in &session.additional_options {
             cmd.arg(opt);

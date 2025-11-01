@@ -22,7 +22,7 @@ impl KubeContext {
 
 #[derive(Debug, Clone)]
 pub struct KubeTarget {
-    pub kind: String,       // "pod" or "service"
+    pub kind: String, // "pod" or "service"
     pub name: String,
     pub namespace: String,
     pub ports: Vec<u16>,
@@ -39,7 +39,10 @@ impl KubeTarget {
                 .collect::<Vec<_>>()
                 .join(", ")
         };
-        format!("{}/{} [{}] - ports: {}", self.kind, self.name, self.namespace, ports_str)
+        format!(
+            "{}/{} [{}] - ports: {}",
+            self.kind, self.name, self.namespace, ports_str
+        )
     }
 
     pub fn target_string(&self) -> String {
@@ -165,9 +168,7 @@ pub fn get_current_context() -> Option<String> {
         .ok()?;
 
     if output.status.success() {
-        let context = String::from_utf8_lossy(&output.stdout)
-            .trim()
-            .to_string();
+        let context = String::from_utf8_lossy(&output.stdout).trim().to_string();
         if !context.is_empty() {
             return Some(context);
         }
@@ -248,13 +249,7 @@ pub fn get_services_with_ports(context: Option<&str>, namespace: Option<&str>) -
         .items
         .into_iter()
         .filter_map(|svc| {
-            let ports: Vec<u16> = svc
-                .spec
-                .ports
-                .as_ref()?
-                .iter()
-                .map(|p| p.port)
-                .collect();
+            let ports: Vec<u16> = svc.spec.ports.as_ref()?.iter().map(|p| p.port).collect();
 
             if ports.is_empty() {
                 return None;
@@ -302,7 +297,12 @@ pub fn filter_targets(targets: &[KubeTarget], query: &str) -> Vec<KubeTarget> {
 
 pub fn get_namespaces(context: Option<&str>) -> Vec<String> {
     let mut cmd = Command::new("kubectl");
-    cmd.args(["get", "namespaces", "-o", "jsonpath={.items[*].metadata.name}"]);
+    cmd.args([
+        "get",
+        "namespaces",
+        "-o",
+        "jsonpath={.items[*].metadata.name}",
+    ]);
 
     if let Some(ctx) = context {
         cmd.args(["--context", ctx]);

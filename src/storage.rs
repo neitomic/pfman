@@ -27,7 +27,9 @@ impl Storage {
     }
 
     pub fn log_file(&self, session_id: &Uuid) -> PathBuf {
-        self.data_dir.join("logs").join(format!("{}.log", session_id))
+        self.data_dir
+            .join("logs")
+            .join(format!("{}.log", session_id))
     }
 
     pub fn load_sessions(&self) -> Result<Vec<Session>> {
