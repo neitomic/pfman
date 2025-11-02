@@ -31,9 +31,14 @@ A terminal-based UI application for managing SSH and Kubernetes port-forwarding 
 - Session logs stored and viewable
 
 ## Installation
-
+### With cargo
 ```bash
 cargo install --path .
+```
+
+### With homebrew
+```bash
+brew install neitomic/tap/pfman
 ```
 
 ## Usage
